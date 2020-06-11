@@ -1,0 +1,22 @@
+{
+  "name": "brace-server",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": "10.x.x"
+  },
+  "scripts": {
+    "version": "node --version",
+    "start": "nodemon server.js",
+    "deploy": "gcloud app deploy --no-promote"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "puppeteer": "^3.3.0",
+    "url-parse": "^1.4.7"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
