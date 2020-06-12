@@ -7,10 +7,13 @@
   },
   "scripts": {
     "version": "node --version",
-    "start": "nodemon server.js",
+    "start": "node server.js",
+    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/brace-001-bbafee694b1c.json nodemon server.js",
     "deploy": "gcloud app deploy --no-promote"
   },
   "dependencies": {
+    "@google-cloud/datastore": "^6.0.0",
+    "@google-cloud/storage": "^5.0.1",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "puppeteer": "^3.3.0",

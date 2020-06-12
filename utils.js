@@ -12,6 +12,18 @@ const runAsyncWrapper = (callback) => {
   }
 };
 
+const randomString = (length) => {
+
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const charactersLength = characters.length;
+
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+};
+
 const removeTailingSlash = (url) => {
   if (url.slice(-1) === '/') return url.slice(0, -1);
   return url;
@@ -25,6 +37,38 @@ const containUrlProtocol = (url) => {
 const ensureContainUrlProtocol = (url) => {
   if (!containUrlProtocol(url)) return HTTP + url;
   return url;
+};
+
+const removeUrlProtocolAndSlashes = (url) => {
+
+  let doSlice = false, sliceIndex = 0;
+  for (let i = 0; i < url.length; i++) {
+    if (url[i] === ':') {
+      doSlice = true;
+      sliceIndex = i + 1;
+      break;
+    }
+    if (url[i] === '.') {
+      doSlice = false;
+      break;
+    }
+    if (url[i] === '/') {
+      doSlice = true;
+      sliceIndex = i;
+      break;
+    }
+  }
+
+  if (!doSlice) return url;
+
+  url = url.slice(sliceIndex);
+
+  sliceIndex = 0;
+  for (; sliceIndex < url.length; sliceIndex++) {
+    if (url[sliceIndex] !== '/') break;
+  }
+
+  return url.slice(sliceIndex);
 };
 
 const separateUrlAndParam = (url, paramKey) => {
@@ -82,26 +126,13 @@ const cleanUrl = (url) => {
   return separatedUrl;
 };
 
-const cleanTitle = (title) => {
-  const separatingCharacters = [' | ', ' _ ', ' - ', '«', '»', '—'];
-
-  title = title.trim();
-  for (c of separatingCharacters) {
-    const arr = title.split(c);
-    if (arr.length > 1) {
-      title = arr[0].trim();
-    }
-  }
-
-  return title;
-};
-
 const cleanText = (text) => {
   return text.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
 };
 
 module.exports = {
-  runAsyncWrapper,
-  removeTailingSlash, ensureContainUrlProtocol, validateUrl, cleanUrl,
-  cleanTitle, cleanText,
+  runAsyncWrapper, randomString,
+  ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
+  validateUrl,
+  cleanUrl, cleanText,
 };

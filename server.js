@@ -1,18 +1,26 @@
 const express = require('express');
 const cors = require('cors');
 const puppeteer = require('puppeteer');
+const { Datastore } = require('@google-cloud/datastore');
+const { Storage } = require('@google-cloud/storage');
 
 const {
-  runAsyncWrapper,
-  removeTailingSlash, validateUrl, cleanUrl,
-  ensureContainUrlProtocol,
-  cleanTitle, cleanText,
+  runAsyncWrapper, randomString,
+  ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
+  validateUrl,
+  cleanUrl, cleanText,
 } = require('./utils');
 const {
+  DATASTORE_KIND, BUCKET_NAME,
   ALLOWED_ORIGINS, N_URLS, VALID_URL,
   PAGE_WIDTH, PAGE_HEIGHT,
   EXTRACT_OK, EXTRACT_ERROR, EXTRACT_INVALID_URL, EXTRACT_EXCEEDING_N_URLS,
 } = require('./const');
+
+const datastore = new Datastore();
+
+const storage = new Storage();
+const bucket = storage.bucket(BUCKET_NAME);
 
 const app = express();
 app.use(express.json());
@@ -23,7 +31,22 @@ const extractCorsOptions = {
 
 let browser;
 
+const saveImage = (image) => new Promise((resolve, reject) => {
 
+  const fname = randomString(48) + '.png';
+  const blob = bucket.file(fname);
+  const blobStream = blob.createWriteStream({
+    resumable: false,
+  });
+  blobStream.on('finish', () => {
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+    resolve(publicUrl);
+  });
+  blobStream.on('error', (e) => {
+    reject(e);
+  });
+  blobStream.end(image);
+});
 
 const _extract = async (url) => {
 
@@ -32,33 +55,36 @@ const _extract = async (url) => {
   if (!browser) browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
-  await page.goto(ensureContainUrlProtocol(url), { waitUntil: 'networkidle0' });
+  await page.goto(url, { waitUntil: 'networkidle0' });
 
   // TODO: Try to get title and image from twitter tags and open graph tags
 
-  const text = cleanText(await page.evaluate(() => {
+  const text = await page.evaluate(() => {
     const el = [...document.getElementsByTagName('h1')][0];
-    if (!el) return '';
+    if (!el) return null;
 
     const text = 'innerText' in el ? 'innerText' : 'textContent';
     return el[text];
-  }));
-  if (text.length >= 10) res.title = text;
-  if (!res.title) {
-    const text = cleanText(await page.evaluate(() => {
+  });
+  if (text !== null) {
+    const cleansedText = cleanText(text);
+    if (cleansedText.length >= 10) res.title = cleansedText;
+  } else {
+    const text = await page.evaluate(() => {
       const el = [...document.getElementsByTagName('h2')][0];
-      if (!el) return '';
+      if (!el) return null;
 
       const text = 'innerText' in el ? 'innerText' : 'textContent';
       return el[text];
-    }));
-    if (text.length >= 10) res.title = text;
+    });
+    if (text !== null) {
+      const cleansedText = cleanText(text);
+      if (cleansedText.length >= 10) res.title = cleansedText;
+    }
   }
   if (!res.title) {
     const title = await page.title();
-    const cleansedTitle = cleanText(cleanTitle(title));
-    if (cleansedTitle.length >= 10) res.title = cleansedTitle;
-    else res.title = cleanText(title);
+    res.title = cleanText(title);
   }
 
   const img = await page.evaluateHandle(() => {
@@ -80,85 +106,93 @@ const _extract = async (url) => {
   return res;
 };
 
-const extract = async (url) => {
-
-  const validatedResult = validateUrl(url);
-  if (validatedResult !== VALID_URL) {
-    return {
-      url: url,
-      status: EXTRACT_INVALID_URL,
-      extractedDT: Date.now(),
-    };
-  }
-
-  // Clean up the url
-  url = cleanUrl(url);
-
-  // Try to get from memCache
-
-
-  // Try to get from DataStore
-  //   If too old, ignore
-  //   If found, save to memCache
-
-  // Try to get from puppeteer
-  //   Save to DataStore and Memcache
-  let title, image;
-  try {
-    ({ title, image } = await _extract(url));
-    console.log(`Extracted title: ${title}`);
-  } catch (e) {
-    console.log(`Puppeteer throws an error: ${e}`);
-    return {
-      url: url,
-      status: EXTRACT_ERROR,
-      extractedDT: Date.now(),
-    }
-  }
-
-  // Save image to db
+const extract = async (url, logKey, seq) => {
 
   const extractedResult = {
     url: url,
-    status: EXTRACT_OK,
-    title: title,
-    //image: imagePath,
     extractedDT: Date.now(),
+  };
+
+  const validatedUrlResult = validateUrl(url);
+  console.log(`(${logKey}-${seq}) validatedUrlResult: ${validatedUrlResult}`);
+  if (validatedUrlResult !== VALID_URL) {
+    console.log(`(${logKey}-${seq}) Invalid url, return ${EXTRACT_INVALID_URL}`);
+    extractedResult.status = EXTRACT_INVALID_URL;
+    return extractedResult;
   }
 
+  url = cleanUrl(url);
+  const urlKey = removeUrlProtocolAndSlashes(url);
+  url = ensureContainUrlProtocol(url);
 
-  // Save to datastore and memcache
+  extractedResult.url = url;
+
+  const savedResult = (await datastore.get(datastore.key([DATASTORE_KIND, urlKey])))[0];
+  if (savedResult) {
+    console.log(`(${logKey}-${seq}) Found savedResult in datastore`);
+
+    // Old records should be removed periodically by a batch job.
+    // If records still exist in datastore, means valid can be used
+    //   so no need to check here.
+
+    return savedResult;
+  }
+
+  let title, image, ok = false;
+  try {
+    ({ title, image } = await _extract(url));
+    console.log(`(${logKey}-${seq}) _extract finished`);
+    ok = true;
+  } catch (e) {
+    console.log(`(${logKey}-${seq}) _extract throws an error`, e);
+    extractedResult.status = EXTRACT_ERROR;
+  }
+
+  if (ok) {
+    const imageUrl = await saveImage(image);
+    console.log(`(${logKey}-${seq}) Saved image at ${imageUrl}`);
+
+    extractedResult.status = EXTRACT_OK;
+    extractedResult.title = title;
+    extractedResult.image = imageUrl;
+  }
+
+  await datastore.save({
+    key: datastore.key([DATASTORE_KIND, urlKey]),
+    data: extractedResult,
+  });
+  console.log(`(${logKey}-${seq}) Saved extracted result to datastore`);
 
   return extractedResult;
 };
 
-app.get('/', (req, res) => {
-  res.status(200).send('Welcome to Brace.to\'s server!').end();
+app.get('/', (_req, res) => {
+  res.status(200).send('Welcome to <a href="https://brace.to">Brace.to</a>\'s server!').end();
 });
 
 app.options('/extract', cors(extractCorsOptions));
 app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => {
-  console.log(`/extract receives a post request`);
+  const logKey = randomString(12);
+  console.log(`(${logKey}) /extract receives a post request`);
 
   const referrer = req.get('Referrer');
-  console.log(`Referrer: ${referrer}`);
+  console.log(`(${logKey}) Referrer: ${referrer}`);
   if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
-    console.log('Invalid referrer, throw error');
+    console.log(`(${logKey}) Invalid referrer, throw error`);
     throw new Error('Invalid referrer');
   }
 
   const reqBody = req.body;
-  console.log('Request body:');
-  console.log(reqBody);
+  console.log(`(${logKey}) Request body: ${JSON.stringify(reqBody)}`);
   if (typeof reqBody !== 'object' || !Array.isArray(reqBody.urls)) {
-    console.log('Invalid req.body, throw error');
+    console.log(`(${logKey}) Invalid req.body, throw error`);
     throw new Error('Invalid request body');
   }
 
   const { urls } = reqBody;
 
   const extractedResults = await Promise.all(
-    urls.slice(0, N_URLS).map(url => extract(url))
+    urls.slice(0, N_URLS).map((url, seq) => extract(url, logKey, seq))
   );
 
   results = {
@@ -171,6 +205,7 @@ app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) 
     extractedDT: Date.now(),
   }));
 
+  console.log(`(${logKey}) /extract finished: ${JSON.stringify(results)}`);
   res.send(JSON.stringify(results));
 }));
 
