@@ -9,7 +9,7 @@ module.exports.ALLOWED_ORIGINS = [
   'https://brace.to',
 ];
 
-module.exports.N_URLS = 10;
+module.exports.N_URLS = 1;
 
 module.exports.HTTP = 'http://';
 

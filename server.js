@@ -144,7 +144,7 @@ const extract = async (url, logKey, seq) => {
     console.log(`(${logKey}-${seq}) _extract finished`);
     ok = true;
   } catch (e) {
-    console.log(`(${logKey}-${seq}) _extract throws an error`, e);
+    console.log(`(${logKey}-${seq}) _extract throws ${e.name}: ${e.message}`);
     extractedResult.status = EXTRACT_ERROR;
   }
 
