@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const { Datastore } = require('@google-cloud/datastore');
 const { Storage } = require('@google-cloud/storage');
 
@@ -16,6 +17,8 @@ const {
   PAGE_WIDTH, PAGE_HEIGHT,
   EXTRACT_OK, EXTRACT_ERROR, EXTRACT_INVALID_URL, EXTRACT_EXCEEDING_N_URLS,
 } = require('./const');
+
+puppeteer.use(StealthPlugin());
 
 const datastore = new Datastore();
 
@@ -48,14 +51,22 @@ const saveImage = (image) => new Promise((resolve, reject) => {
   blobStream.end(image);
 });
 
-const _extract = async (url) => {
+const _extract = async (url, logKey, seq) => {
 
   const res = {};
 
-  if (!browser) browser = await puppeteer.launch();
-  const page = await browser.newPage();
+  if (!browser) browser = await puppeteer.launch({ headless: true });
+
+  const context = await browser.createIncognitoBrowserContext();
+  const page = await context.newPage();
   await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
-  await page.goto(url, { waitUntil: 'networkidle0' });
+  try {
+    await page.goto(url, { timeout: 10000, waitUntil: 'networkidle0' });
+  } catch (e) {
+    if (e.name === 'TimeoutError') {
+      console.log(`(${logKey}-${seq}) _extract throws TimeoutError but continue extracting`);
+    } else throw e;
+  }
 
   // TODO: Try to get title and image from twitter tags and open graph tags
 
@@ -103,6 +114,7 @@ const _extract = async (url) => {
   if (!res.image) res.image = await page.screenshot();
 
   await page.close();
+  await context.close();
   return res;
 };
 
@@ -140,7 +152,7 @@ const extract = async (url, logKey, seq) => {
 
   let title, image, ok = false;
   try {
-    ({ title, image } = await _extract(url));
+    ({ title, image } = await _extract(url, logKey, seq));
     console.log(`(${logKey}-${seq}) _extract finished`);
     ok = true;
   } catch (e) {
