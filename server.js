@@ -103,14 +103,14 @@ const _extract = async (url, logKey, seq) => {
       (a, b) => b.width * b.height - a.width * a.height
     )[0];
   });
-  if (img) {
+  if (img.asElement()) {
     const [imgWidth, imgHeight] = await img.evaluate(elem => [elem.width, elem.height]);
     const imgRatio = imgWidth / imgHeight;
     if (imgWidth > PAGE_WIDTH * 0.4 && (imgRatio >= 1.6 && imgRatio < 1.94)) {
       res.image = await img.screenshot();
     }
-    await img.dispose();
   }
+  await img.dispose();
   if (!res.image) res.image = await page.screenshot();
 
   await page.close();
