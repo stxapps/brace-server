@@ -113,6 +113,14 @@ const _extract = async (url, logKey, seq) => {
   await img.dispose();
   if (!res.image) res.image = await page.screenshot();
 
+  const favicon = await page.evaluate(() => {
+    const el = [...document.head.getElementsByTagName('link')].filter(el => el.rel === 'icon' || el.rel === 'shortcut icon').slice(-1)[0];
+    if (!el) return null;
+
+    return el.href;
+  });
+  if (favicon) res.favicon = favicon;
+
   await page.close();
   await context.close();
   return res;
@@ -150,9 +158,9 @@ const extract = async (url, logKey, seq) => {
     return savedResult;
   }
 
-  let title, image, ok = false;
+  let title, image, favicon, ok = false;
   try {
-    ({ title, image } = await _extract(url, logKey, seq));
+    ({ title, image, favicon } = await _extract(url, logKey, seq));
     console.log(`(${logKey}-${seq}) _extract finished`);
     ok = true;
   } catch (e) {
@@ -167,6 +175,7 @@ const extract = async (url, logKey, seq) => {
     extractedResult.status = EXTRACT_OK;
     extractedResult.title = title;
     extractedResult.image = imageUrl;
+    if (favicon) extractedResult.favicon = favicon;
   }
 
   await datastore.save({
