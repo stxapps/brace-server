@@ -12,13 +12,13 @@
     "deploy": "gcloud app deploy --no-promote"
   },
   "dependencies": {
-    "@google-cloud/datastore": "^6.0.0",
-    "@google-cloud/storage": "^5.1.0",
+    "@google-cloud/datastore": "^6.1.0",
+    "@google-cloud/storage": "^5.2.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "puppeteer": "^3.3.0",
-    "puppeteer-extra": "^3.1.9",
-    "puppeteer-extra-plugin-stealth": "^2.4.9",
+    "puppeteer": "^5.2.1",
+    "puppeteer-extra": "^3.1.15",
+    "puppeteer-extra-plugin-stealth": "^2.6.0",
     "url-parse": "^1.4.7"
   },
   "devDependencies": {

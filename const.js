@@ -17,7 +17,7 @@ module.exports.VALID_URL = 'VALID_URL';
 module.exports.NO_URL = 'NO_URL';
 module.exports.ASK_CONFIRM_URL = 'ASK_CONFIRM_URL';
 
-module.exports.IGNORED_URL_PARAMS = ['utm_source', 'utm_medium', 'utm_term'];
+module.exports.IGNORED_URL_PARAMS = ['utm_source', 'utm_medium', 'utm_term', 'utm_campaign', 'utm_brand', 'utm_social-type', 'utm_content'];
 
 module.exports.PAGE_WIDTH = 1024;
 module.exports.PAGE_HEIGHT = 597;
