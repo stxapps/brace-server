@@ -49,10 +49,10 @@
   resolved "https://registry.yarnpkg.com/@google-cloud/promisify/-/promisify-2.0.1.tgz#79f722463a5779197267c6870362b1d7927081f7"
   integrity sha512-82EQzwrNauw1fkbUSr3f+50Bcq7g4h0XvLOk8C5e9ABkXYHei7ZPi9tiMMD7Vh3SfcdH97d1ibJ3KBWp2o1J+w==
 
-"@google-cloud/storage@^5.2.0":
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-5.2.0.tgz#dedbc84b68c20cecb0212740ee4f71fab1c6a97d"
-  integrity sha512-zxHXZajtVA0Qx9IOnDUDb76mtKn5M20LKV/phmnVos7foozG9YZ6yYod90pRC/GgP3eOgxNYdt6KQcapssPsFw==
+"@google-cloud/storage@^5.3.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/storage/-/storage-5.3.0.tgz#cf86683911cce68829e46de544abb41947d29da2"
+  integrity sha512-3t5UF3SZ14Bw2kcBHubCai6EIugU2GnQOstYWVSFuoO8IJ94RAaIOPq/dtexvQbUTpBTAGpd5smVR9WPL1mJVw==
   dependencies:
     "@google-cloud/common" "^3.3.0"
     "@google-cloud/paginator" "^3.0.0"
@@ -1662,10 +1662,10 @@ pupa@^2.0.1:
   dependencies:
     escape-goat "^2.0.0"
 
-puppeteer-extra-plugin-stealth@^2.6.0:
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/puppeteer-extra-plugin-stealth/-/puppeteer-extra-plugin-stealth-2.6.0.tgz#bdd273064c7766ec527ebc34b2443ac8ccba83f9"
-  integrity sha512-AtPITlrfo74k7zURpGXnAnwTJMDLjmTvqP0nzmvt6Hh5TLs2ZuK2MQG///bRBOy2kWftDVzeU6HDGfMW8YQ2CA==
+puppeteer-extra-plugin-stealth@^2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/puppeteer-extra-plugin-stealth/-/puppeteer-extra-plugin-stealth-2.6.1.tgz#012b21f9f9f760c60187457484451b144b24acc5"
+  integrity sha512-KPoqjvYdnX8BpcjuXZKethad11WY1UfVzckSmOpBCCtdYic1s6esPhenLTvBEfZQ5XAT61yLK8jQtNgkML0QVg==
   dependencies:
     debug "^4.1.1"
     puppeteer-extra-plugin "^3.1.7"

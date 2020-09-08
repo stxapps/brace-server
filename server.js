@@ -40,6 +40,9 @@ const saveImage = (image) => new Promise((resolve, reject) => {
   const blob = bucket.file(fname);
   const blobStream = blob.createWriteStream({
     resumable: false,
+    metadata: {
+      cacheControl: 'public, max-age=31536000',
+    },
   });
   blobStream.on('finish', () => {
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
@@ -114,7 +117,7 @@ const _extract = async (url, logKey, seq) => {
   if (!res.image) res.image = await page.screenshot();
 
   const favicon = await page.evaluate(() => {
-    const el = [...document.head.getElementsByTagName('link')].filter(el => el.rel === 'icon' || el.rel === 'shortcut icon').slice(-1)[0];
+    const el = [...document.head.getElementsByTagName('link')].filter(el => el.rel === 'icon' || el.rel === 'shortcut icon' || el.rel === 'ICON' || el.rel === 'SHORTCUT ICON').slice(-1)[0];
     if (!el) return null;
 
     return el.href;
