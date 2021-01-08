@@ -175,17 +175,29 @@ const extract = async (url, logKey, seq) => {
     const imageUrl = await saveImage(image);
     console.log(`(${logKey}-${seq}) Saved image at ${imageUrl}`);
 
+    // The value of Datastore string property can't be longer than 1500 bytes
     extractedResult.status = EXTRACT_OK;
-    extractedResult.title = title;
+    if (title) {
+      const byteSize = Buffer.byteLength(title, 'utf8');
+      if (byteSize < 1500) extractedResult.title = title;
+    }
     extractedResult.image = imageUrl;
-    if (favicon) extractedResult.favicon = favicon;
+    if (favicon) {
+      const byteSize = Buffer.byteLength(favicon, 'utf8');
+      if (byteSize < 1500) extractedResult.favicon = favicon;
+    }
   }
 
-  await datastore.save({
-    key: datastore.key([DATASTORE_KIND, urlKey]),
-    data: extractedResult,
-  });
-  console.log(`(${logKey}-${seq}) Saved extracted result to datastore`);
+  try {
+    await datastore.save({
+      key: datastore.key([DATASTORE_KIND, urlKey]),
+      data: extractedResult,
+    });
+    console.log(`(${logKey}-${seq}) Saved extracted result to datastore`);
+  } catch (e) {
+    console.log(`(${logKey}-${seq}) datastore.save throws ${e.name}: ${e.message}`);
+    extractedResult.status = EXTRACT_ERROR;
+  }
 
   return extractedResult;
 };
