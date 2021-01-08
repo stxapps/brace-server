@@ -1,6 +1,6 @@
 {
   "name": "brace-server",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "engines": {
     "node": "10.x.x"
