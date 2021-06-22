@@ -9,7 +9,8 @@ module.exports.ALLOWED_ORIGINS = [
   'https://brace.to',
 ];
 
-module.exports.N_URLS = 1;
+module.exports.N_URLS = 10;
+module.exports.N_EXTRACTS = 7;
 
 module.exports.HTTP = 'http://';
 
@@ -22,6 +23,7 @@ module.exports.IGNORED_URL_PARAMS = ['utm_source', 'utm_medium', 'utm_term', 'ut
 module.exports.PAGE_WIDTH = 1024;
 module.exports.PAGE_HEIGHT = 597;
 
+module.exports.EXTRACT_INIT = 'EXTRACT_INIT';
 module.exports.EXTRACT_OK = 'EXTRACT_OK';
 module.exports.EXTRACT_ERROR = 'EXTRACT_ERROR';
 module.exports.EXTRACT_INVALID_URL = 'EXTRACT_INVALID_URL';

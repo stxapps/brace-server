@@ -3,7 +3,7 @@
   "version": "0.2.3",
   "private": true,
   "engines": {
-    "node": "10.x.x"
+    "node": "12.x.x"
   },
   "scripts": {
     "version": "node --version",
@@ -12,14 +12,10 @@
     "deploy": "gcloud app deploy --no-promote"
   },
   "dependencies": {
-    "@google-cloud/datastore": "^6.3.1",
-    "@google-cloud/storage": "^5.7.1",
+    "@google-cloud/datastore": "^6.4.1",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "puppeteer": "5.2.1",
-    "puppeteer-extra": "^3.1.15",
-    "puppeteer-extra-plugin-stealth": "^2.6.5",
-    "url-parse": "^1.5.0"
+    "url-parse": "^1.5.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"

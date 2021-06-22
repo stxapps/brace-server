@@ -1,29 +1,20 @@
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const { Datastore } = require('@google-cloud/datastore');
-const { Storage } = require('@google-cloud/storage');
 
 const {
   runAsyncWrapper, randomString,
   ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
   validateUrl,
-  cleanUrl, cleanText,
+  cleanUrl,
 } = require('./utils');
 const {
-  DATASTORE_KIND, BUCKET_NAME,
+  DATASTORE_KIND,
   ALLOWED_ORIGINS, N_URLS, VALID_URL,
-  PAGE_WIDTH, PAGE_HEIGHT,
-  EXTRACT_OK, EXTRACT_ERROR, EXTRACT_INVALID_URL, EXTRACT_EXCEEDING_N_URLS,
+  EXTRACT_INIT, EXTRACT_ERROR, EXTRACT_INVALID_URL, EXTRACT_EXCEEDING_N_URLS,
 } = require('./const');
 
-puppeteer.use(StealthPlugin());
-
 const datastore = new Datastore();
-
-const storage = new Storage();
-const bucket = storage.bucket(BUCKET_NAME);
 
 const app = express();
 app.use(express.json());
@@ -32,104 +23,7 @@ const extractCorsOptions = {
   'origin': ALLOWED_ORIGINS,
 }
 
-let browser;
-
-const saveImage = (image) => new Promise((resolve, reject) => {
-
-  const fname = randomString(48) + '.png';
-  const blob = bucket.file(fname);
-  const blobStream = blob.createWriteStream({
-    resumable: false,
-    metadata: {
-      cacheControl: 'public, max-age=31536000',
-    },
-  });
-  blobStream.on('finish', () => {
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-    resolve(publicUrl);
-  });
-  blobStream.on('error', (e) => {
-    reject(e);
-  });
-  blobStream.end(image);
-});
-
-const _extract = async (url, logKey, seq) => {
-
-  const res = {};
-
-  if (!browser) browser = await puppeteer.launch({ headless: true });
-
-  const context = await browser.createIncognitoBrowserContext();
-  const page = await context.newPage();
-  await page.setViewport({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
-  try {
-    await page.goto(url, { timeout: 10000, waitUntil: 'networkidle0' });
-  } catch (e) {
-    if (e.name === 'TimeoutError') {
-      console.log(`(${logKey}-${seq}) _extract throws TimeoutError but continue extracting`);
-    } else throw e;
-  }
-
-  // TODO: Try to get title and image from twitter tags and open graph tags
-
-  const text = await page.evaluate(() => {
-    const el = [...document.getElementsByTagName('h1')][0];
-    if (!el) return null;
-
-    const text = 'innerText' in el ? 'innerText' : 'textContent';
-    return el[text];
-  });
-  if (text !== null) {
-    const cleansedText = cleanText(text);
-    if (cleansedText.length >= 10) res.title = cleansedText;
-  } else {
-    const text = await page.evaluate(() => {
-      const el = [...document.getElementsByTagName('h2')][0];
-      if (!el) return null;
-
-      const text = 'innerText' in el ? 'innerText' : 'textContent';
-      return el[text];
-    });
-    if (text !== null) {
-      const cleansedText = cleanText(text);
-      if (cleansedText.length >= 10) res.title = cleansedText;
-    }
-  }
-  if (!res.title) {
-    const title = await page.title();
-    res.title = cleanText(title);
-  }
-
-  const img = await page.evaluateHandle(() => {
-    return [...document.getElementsByTagName('img')].sort(
-      (a, b) => b.width * b.height - a.width * a.height
-    )[0];
-  });
-  if (img.asElement()) {
-    const [imgWidth, imgHeight] = await img.evaluate(elem => [elem.width, elem.height]);
-    const imgRatio = imgWidth / imgHeight;
-    if (imgWidth > PAGE_WIDTH * 0.4 && (imgRatio >= 1.6 && imgRatio < 1.94)) {
-      res.image = await img.screenshot();
-    }
-  }
-  await img.dispose();
-  if (!res.image) res.image = await page.screenshot();
-
-  const favicon = await page.evaluate(() => {
-    const el = [...document.head.getElementsByTagName('link')].filter(el => el.rel === 'icon' || el.rel === 'shortcut icon' || el.rel === 'ICON' || el.rel === 'SHORTCUT ICON').slice(-1)[0];
-    if (!el) return null;
-
-    return el.href;
-  });
-  if (favicon) res.favicon = favicon;
-
-  await page.close();
-  await context.close();
-  return res;
-};
-
-const extract = async (url, logKey, seq) => {
+const getOrInitExtractedResult = async (url, logKey, seq) => {
 
   const extractedResult = {
     url: url,
@@ -161,39 +55,15 @@ const extract = async (url, logKey, seq) => {
     return savedResult;
   }
 
-  let title, image, favicon, ok = false;
-  try {
-    ({ title, image, favicon } = await _extract(url, logKey, seq));
-    console.log(`(${logKey}-${seq}) _extract finished`);
-    ok = true;
-  } catch (e) {
-    console.log(`(${logKey}-${seq}) _extract throws ${e.name}: ${e.message}`);
-    extractedResult.status = EXTRACT_ERROR;
-  }
-
-  if (ok) {
-    const imageUrl = await saveImage(image);
-    console.log(`(${logKey}-${seq}) Saved image at ${imageUrl}`);
-
-    // The value of Datastore string property can't be longer than 1500 bytes
-    extractedResult.status = EXTRACT_OK;
-    if (title) {
-      const byteSize = Buffer.byteLength(title, 'utf8');
-      if (byteSize < 1500) extractedResult.title = title;
-    }
-    extractedResult.image = imageUrl;
-    if (favicon) {
-      const byteSize = Buffer.byteLength(favicon, 'utf8');
-      if (byteSize < 1500) extractedResult.favicon = favicon;
-    }
-  }
+  console.log(`(${logKey}-${seq}) Not found savedResult in datastore`);
+  extractedResult.status = EXTRACT_INIT;
 
   try {
     await datastore.save({
       key: datastore.key([DATASTORE_KIND, urlKey]),
       data: extractedResult,
     });
-    console.log(`(${logKey}-${seq}) Saved extracted result to datastore`);
+    console.log(`(${logKey}-${seq}) Initialised extracted result to datastore`);
   } catch (e) {
     console.log(`(${logKey}-${seq}) datastore.save throws ${e.name}: ${e.message}`);
     extractedResult.status = EXTRACT_ERROR;
@@ -228,12 +98,10 @@ app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) 
   const { urls } = reqBody;
 
   const extractedResults = await Promise.all(
-    urls.slice(0, N_URLS).map((url, seq) => extract(url, logKey, seq))
+    urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(url, logKey, seq))
   );
 
-  results = {
-    extractedResults: [],
-  };
+  const results = { extractedResults: [] };
   extractedResults.forEach(result => results.extractedResults.push(result));
   urls.slice(N_URLS).forEach(url => results.extractedResults.push({
     url: url,
@@ -242,6 +110,37 @@ app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) 
   }));
 
   console.log(`(${logKey}) /extract finished: ${JSON.stringify(results)}`);
+  res.send(JSON.stringify(results));
+}));
+
+app.options('/poke', cors(extractCorsOptions));
+app.post('/poke', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => {
+  const logKey = randomString(12);
+  console.log(`(${logKey}) /poke receives a post request`);
+
+  const referrer = req.get('Referrer');
+  console.log(`(${logKey}) Referrer: ${referrer}`);
+  if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
+    console.log(`(${logKey}) Invalid referrer, throw error`);
+    throw new Error('Invalid referrer');
+  }
+
+  const reqBody = req.body;
+  console.log(`(${logKey}) Request body: ${JSON.stringify(reqBody)}`);
+  if (typeof reqBody !== 'object' || !Array.isArray(reqBody.urls)) {
+    console.log(`(${logKey}) Invalid req.body, throw error`);
+    throw new Error('Invalid request body');
+  }
+
+  const { urls } = reqBody;
+
+  await Promise.all(
+    urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(url, logKey, seq))
+  );
+
+  const results = { status: 'poked' };
+
+  console.log(`(${logKey}) /poke finished: ${JSON.stringify(results)}`);
   res.send(JSON.stringify(results));
 }));
 
