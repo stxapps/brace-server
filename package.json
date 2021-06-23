@@ -1,12 +1,13 @@
 {
   "name": "brace-server",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "engines": {
     "node": "12.x.x"
   },
   "scripts": {
     "version": "node --version",
+    "diff": "diff const.js ../brace-server-worker/const.js && diff utils.js ../brace-server-worker/utils.js",
     "start": "node server.js",
     "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/brace-001-bbafee694b1c.json nodemon server.js",
     "deploy": "gcloud app deploy --no-promote"
