@@ -113,10 +113,10 @@ app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) 
   res.send(JSON.stringify(results));
 }));
 
-app.options('/poke', cors(extractCorsOptions));
-app.post('/poke', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => {
+app.options('/pre-extract', cors(extractCorsOptions));
+app.post('/pre-extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => {
   const logKey = randomString(12);
-  console.log(`(${logKey}) /poke receives a post request`);
+  console.log(`(${logKey}) /pre-extract receives a post request`);
 
   const referrer = req.get('Referrer');
   console.log(`(${logKey}) Referrer: ${referrer}`);
@@ -138,9 +138,9 @@ app.post('/poke', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => 
     urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(url, logKey, seq))
   );
 
-  const results = { status: 'poked' };
+  const results = { status: 'pre-extracted' };
 
-  console.log(`(${logKey}) /poke finished: ${JSON.stringify(results)}`);
+  console.log(`(${logKey}) /pre-extract finished: ${JSON.stringify(results)}`);
   res.send(JSON.stringify(results));
 }));
 
