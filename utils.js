@@ -107,9 +107,11 @@ const separateUrlAndParam = (url, paramKey) => {
 
 const validateUrl = (url) => {
 
-  if (!url) {
-    return NO_URL;
-  }
+  if (!url) return NO_URL;
+
+  if (/\s/g.test(url)) return ASK_CONFIRM_URL;
+  // Buffer's only available in NodeJs, but not in web browsers.
+  if (Buffer.byteLength(url, 'utf8') >= 1500) return ASK_CONFIRM_URL;
 
   url = ensureContainUrlProtocol(url);
 

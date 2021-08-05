@@ -3,13 +3,13 @@
   "version": "0.3.1",
   "private": true,
   "engines": {
-    "node": "12.x.x"
+    "node": "14.x.x"
   },
   "scripts": {
     "version": "node --version",
     "diff": "diff const.js ../brace-server-worker/const.js && diff utils.js ../brace-server-worker/utils.js",
     "start": "node server.js",
-    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/brace-001-bbafee694b1c.json nodemon server.js",
+    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/adc.json nodemon server.js",
     "deploy": "gcloud app deploy --no-promote"
   },
   "dependencies": {
@@ -18,7 +18,5 @@
     "express": "^4.17.1",
     "url-parse": "^1.5.1"
   },
-  "devDependencies": {
-    "nodemon": "^2.0.7"
-  }
+  "devDependencies": {}
 }

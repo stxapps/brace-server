@@ -4,7 +4,13 @@ module.exports.BUCKET_NAME = 'brace-static-files';
 module.exports.ALLOWED_ORIGINS = [
   'http://localhost:8080',
   'https://localhost:3000',
+  'https://192.168.40.220:3000',
+  'https://192.168.41.220:3000',
+  'https://192.168.42.220:3000',
   'https://192.168.43.220:3000',
+  'https://192.168.44.220:3000',
+  'https://192.168.45.220:3000',
+  'https://192.168.46.220:3000',
   'https://d2r7uroqj51uls.cloudfront.net',
   'https://brace.to',
 ];
