@@ -5,14 +5,15 @@ const { Datastore } = require('@google-cloud/datastore');
 const {
   runAsyncWrapper, randomString,
   ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
-  validateUrl,
-  cleanUrl,
+  validateUrl, cleanUrl, getExtractedResult, deriveExtractedTitle,
 } = require('./utils');
 const {
   DATASTORE_KIND,
   ALLOWED_ORIGINS, N_URLS, VALID_URL,
   EXTRACT_INIT, EXTRACT_ERROR, EXTRACT_INVALID_URL, EXTRACT_EXCEEDING_N_URLS,
+  DERIVED_VALUE,
 } = require('./const');
+const { manualResults } = require('./results');
 
 const datastore = new Datastore();
 
@@ -43,6 +44,18 @@ const getOrInitExtractedResult = async (url, logKey, seq) => {
   url = ensureContainUrlProtocol(url);
 
   extractedResult.url = url;
+
+  const manualResult = getExtractedResult(manualResults, urlKey);
+  if (manualResult) {
+    console.log(`(${logKey}-${seq}) Found in manualResults`);
+    if (manualResult.url === DERIVED_VALUE) {
+      manualResult.url = url;
+    }
+    if (manualResult.title === DERIVED_VALUE) {
+      manualResult.title = deriveExtractedTitle(urlKey);
+    }
+    return manualResult;
+  }
 
   const savedResult = (await datastore.get(datastore.key([DATASTORE_KIND, urlKey])))[0];
   if (savedResult) {

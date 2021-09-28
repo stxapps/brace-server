@@ -2,6 +2,7 @@ module.exports.DATASTORE_KIND = 'ExtractedResult';
 module.exports.BUCKET_NAME = 'brace-static-files';
 
 module.exports.ALLOWED_ORIGINS = [
+  'http://127.0.0.1:8080',
   'http://localhost:8080',
   'https://localhost:3000',
   'https://192.168.40.220:3000',
@@ -34,3 +35,5 @@ module.exports.EXTRACT_OK = 'EXTRACT_OK';
 module.exports.EXTRACT_ERROR = 'EXTRACT_ERROR';
 module.exports.EXTRACT_INVALID_URL = 'EXTRACT_INVALID_URL';
 module.exports.EXTRACT_EXCEEDING_N_URLS = 'EXTRACT_EXCEEDING_N_URLS';
+
+module.exports.DERIVED_VALUE = '00__--DERIVED_VALUE--__00';

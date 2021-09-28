@@ -105,6 +105,16 @@ const separateUrlAndParam = (url, paramKey) => {
   return { separatedUrl, param };
 };
 
+const removeUrlQueryAndHash = (url) => {
+  const qIndex = url.indexOf('?');
+  if (qIndex > -1) url = url.slice(0, qIndex);
+
+  const hIndex = url.indexOf('#');
+  if (hIndex > -1) url = url.slice(0, hIndex);
+
+  return url;
+};
+
 const validateUrl = (url) => {
 
   if (!url) return NO_URL;
@@ -132,9 +142,50 @@ const cleanText = (text) => {
   return text.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
 };
 
+const getExtractedResult = (results, urlKey) => {
+  // BUG Alert
+  //   Query might be important i.e. www.youtube.com/watch?v=C5zXQU5yir4
+  urlKey = removeTailingSlash(removeUrlQueryAndHash(urlKey));
+  if (urlKey in results) return { ...results[urlKey] };
+
+  let customKey = urlKey + '*';
+  if (customKey in results) return { ...results[customKey] };
+
+  const phrases = urlKey.split('/');
+  if (phrases.length >= 2) {
+    if (phrases[phrases.length - 1].split('-').length >= 2) {
+      // Contain url path that can be a title
+      customKey = phrases[0] + '/**/${TITLE}';
+      if (customKey in results) return { ...results[customKey] };
+    }
+
+    for (let i = phrases.length - 1; i >= 1; i--) {
+      customKey = phrases.slice(0, i).join('/') + '+';
+      if (customKey in results) return { ...results[customKey] };
+
+      customKey = phrases.slice(0, i).join('/') + '*';
+      if (customKey in results) return { ...results[customKey] };
+    }
+  }
+
+  return null;
+};
+
+const deriveExtractedTitle = (urlKey) => {
+  urlKey = removeTailingSlash(removeUrlQueryAndHash(urlKey));
+
+  const phrases = urlKey.split('/');
+  if (phrases.length < 2) return urlKey;
+
+  const words = phrases[phrases.length - 1].split('-');
+  if (words.length < 2) return urlKey;
+
+  const s = words.join(' ');
+  return s[0].toUpperCase() + s.slice(1).toLowerCase();
+};
+
 module.exports = {
   runAsyncWrapper, randomString,
   ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
-  validateUrl,
-  cleanUrl, cleanText,
+  validateUrl, cleanUrl, cleanText, getExtractedResult, deriveExtractedTitle,
 };
