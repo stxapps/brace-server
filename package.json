@@ -13,10 +13,10 @@
     "deploy": "gcloud app deploy --no-promote"
   },
   "dependencies": {
-    "@google-cloud/datastore": "^6.4.1",
+    "@google-cloud/datastore": "^6.5.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "url-parse": "^1.5.1"
+    "url-parse": "^1.5.3"
   },
   "devDependencies": {}
 }
