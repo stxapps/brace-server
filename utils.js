@@ -39,6 +39,16 @@ const ensureContainUrlProtocol = (url) => {
   return url;
 };
 
+const extractUrl = (url) => {
+  url = ensureContainUrlProtocol(url);
+  const urlObj = new Url(url, {});
+  return {
+    host: urlObj.host,
+    origin: urlObj.origin,
+    pathname: urlObj.pathname,
+  };
+};
+
 const removeUrlProtocolAndSlashes = (url) => {
 
   let doSlice = false, sliceIndex = 0;
@@ -196,7 +206,7 @@ const canTextInDb = (text) => {
 
 module.exports = {
   runAsyncWrapper, randomString,
-  ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
+  ensureContainUrlProtocol, extractUrl, removeTailingSlash, removeUrlProtocolAndSlashes,
   validateUrl, cleanUrl, cleanText, getExtractedResult, deriveExtractedTitle,
   isExtractedResultComplete, canTextInDb,
 };
