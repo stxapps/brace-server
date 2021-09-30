@@ -204,9 +204,16 @@ const canTextInDb = (text) => {
   return byteSize < 1500;
 };
 
+const containRedirectWords = (text) => {
+  text = text.toLowerCase();
+  if (text.includes('redirect')) return true;
+  if (text.includes('javascript')) return true;
+  return false;
+};
+
 module.exports = {
   runAsyncWrapper, randomString,
   ensureContainUrlProtocol, extractUrl, removeTailingSlash, removeUrlProtocolAndSlashes,
   validateUrl, cleanUrl, cleanText, getExtractedResult, deriveExtractedTitle,
-  isExtractedResultComplete, canTextInDb,
+  isExtractedResultComplete, canTextInDb, containRedirectWords,
 };
