@@ -17,7 +17,7 @@ module.exports.ALLOWED_ORIGINS = [
 ];
 
 module.exports.N_URLS = 10;
-module.exports.N_EXTRACTS = 7;
+module.exports.N_EXTRACTS = 2;
 
 module.exports.HTTP = 'http://';
 

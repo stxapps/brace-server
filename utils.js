@@ -184,8 +184,19 @@ const deriveExtractedTitle = (urlKey) => {
   return s[0].toUpperCase() + s.slice(1).toLowerCase();
 };
 
+const isExtractedResultComplete = (result) => {
+  return result.title && result.image && result.favicon;
+};
+
+const canTextInDb = (text) => {
+  // The value of Datastore string property can't be longer than 1500 bytes
+  const byteSize = Buffer.byteLength(text, 'utf8');
+  return byteSize < 1500;
+};
+
 module.exports = {
   runAsyncWrapper, randomString,
   ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
   validateUrl, cleanUrl, cleanText, getExtractedResult, deriveExtractedTitle,
+  isExtractedResultComplete, canTextInDb,
 };
