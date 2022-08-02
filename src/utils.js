@@ -1,18 +1,24 @@
-const Url = require('url-parse');
+import Url from 'url-parse';
 
-const {
-  HTTP,
-  VALID_URL, NO_URL, ASK_CONFIRM_URL,
-  IGNORED_URL_PARAMS,
-} = require('./const');
+import { HTTP, VALID_URL, NO_URL, ASK_CONFIRM_URL, IGNORED_URL_PARAMS } from './const';
 
-const runAsyncWrapper = (callback) => {
+export const runAsyncWrapper = (callback) => {
   return function (req, res, next) {
     callback(req, res, next).catch(next);
   }
 };
 
-const randomString = (length) => {
+export const getReferrer = (request) => {
+  let referrer = request.get('Referrer');
+  if (!referrer) referrer = request.get('Origin');
+  return referrer;
+};
+
+export const isObject = (val) => {
+  return typeof val === 'object' && val !== null;
+};
+
+export const randomString = (length) => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;
 
@@ -23,7 +29,7 @@ const randomString = (length) => {
   return result;
 };
 
-const removeTailingSlash = (url) => {
+export const removeTailingSlash = (url) => {
   if (url.slice(-1) === '/') return url.slice(0, -1);
   return url;
 };
@@ -33,12 +39,12 @@ const containUrlProtocol = (url) => {
   return urlObj.protocol && urlObj.protocol !== '';
 };
 
-const ensureContainUrlProtocol = (url) => {
+export const ensureContainUrlProtocol = (url) => {
   if (!containUrlProtocol(url)) return HTTP + url;
   return url;
 };
 
-const extractUrl = (url) => {
+export const extractUrl = (url) => {
   url = ensureContainUrlProtocol(url);
   const urlObj = new Url(url, {});
   return {
@@ -48,7 +54,7 @@ const extractUrl = (url) => {
   };
 };
 
-const removeUrlProtocolAndSlashes = (url) => {
+export const removeUrlProtocolAndSlashes = (url) => {
 
   let doSlice = false, sliceIndex = 0;
   for (let i = 0; i < url.length; i++) {
@@ -80,7 +86,7 @@ const removeUrlProtocolAndSlashes = (url) => {
   return url.slice(sliceIndex);
 };
 
-const separateUrlAndParam = (url, paramKey) => {
+export const separateUrlAndParam = (url, paramKey) => {
 
   const doContain = containUrlProtocol(url);
   url = ensureContainUrlProtocol(url);
@@ -114,7 +120,7 @@ const separateUrlAndParam = (url, paramKey) => {
   return { separatedUrl, param };
 };
 
-const removeUrlQueryAndHash = (url) => {
+export const removeUrlQueryAndHash = (url) => {
   const qIndex = url.indexOf('?');
   if (qIndex > -1) url = url.slice(0, qIndex);
 
@@ -124,7 +130,7 @@ const removeUrlQueryAndHash = (url) => {
   return url;
 };
 
-const validateUrl = (url) => {
+export const validateUrl = (url) => {
 
   if (!url) return NO_URL;
   if (/\s/g.test(url)) return ASK_CONFIRM_URL;
@@ -142,16 +148,16 @@ const validateUrl = (url) => {
   return VALID_URL;
 };
 
-const cleanUrl = (url) => {
+export const cleanUrl = (url) => {
   const { separatedUrl } = separateUrlAndParam(url, IGNORED_URL_PARAMS);
   return removeTailingSlash(separatedUrl);
 };
 
-const cleanText = (text) => {
+export const cleanText = (text) => {
   return text.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
 };
 
-const getExtractedResult = (results, urlKey) => {
+export const getExtractedResult = (results, urlKey) => {
   // BUG Alert
   //   Query might be important i.e. www.youtube.com/watch?v=C5zXQU5yir4
   urlKey = removeTailingSlash(removeUrlQueryAndHash(urlKey));
@@ -180,7 +186,7 @@ const getExtractedResult = (results, urlKey) => {
   return null;
 };
 
-const deriveExtractedTitle = (urlKey) => {
+export const deriveExtractedTitle = (urlKey) => {
   urlKey = removeTailingSlash(removeUrlQueryAndHash(urlKey));
 
   const phrases = urlKey.split('/');
@@ -193,26 +199,19 @@ const deriveExtractedTitle = (urlKey) => {
   return s[0].toUpperCase() + s.slice(1).toLowerCase();
 };
 
-const isExtractedResultComplete = (result) => {
+export const isExtractedResultComplete = (result) => {
   return result.title && result.image && result.favicon;
 };
 
-const canTextInDb = (text) => {
+export const canTextInDb = (text) => {
   // The value of Datastore string property can't be longer than 1500 bytes
   const byteSize = Buffer.byteLength(text, 'utf8');
   return byteSize < 1500;
 };
 
-const containRedirectWords = (text) => {
+export const containRedirectWords = (text) => {
   text = text.toLowerCase();
   if (text.includes('redirect')) return true;
   if (text.includes('javascript')) return true;
   return false;
-};
-
-module.exports = {
-  runAsyncWrapper, randomString,
-  ensureContainUrlProtocol, extractUrl, removeTailingSlash, removeUrlProtocolAndSlashes,
-  validateUrl, cleanUrl, cleanText, getExtractedResult, deriveExtractedTitle,
-  isExtractedResultComplete, canTextInDb, containRedirectWords,
 };

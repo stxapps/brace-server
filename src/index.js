@@ -1,32 +1,28 @@
-const express = require('express');
-const cors = require('cors');
-const { Datastore } = require('@google-cloud/datastore');
+import express from 'express';
+import cors from 'cors';
 
-const {
-  runAsyncWrapper, randomString,
-  ensureContainUrlProtocol, removeTailingSlash, removeUrlProtocolAndSlashes,
-  validateUrl, cleanUrl, getExtractedResult, deriveExtractedTitle,
-} = require('./utils');
-const {
-  DATASTORE_KIND,
-  ALLOWED_ORIGINS, N_URLS, VALID_URL,
-  EXTRACT_INIT, EXTRACT_ERROR, EXTRACT_INVALID_URL, EXTRACT_EXCEEDING_N_URLS,
-  DERIVED_VALUE,
-} = require('./const');
-const { manualResults } = require('./results');
-
-const datastore = new Datastore();
+import dataApi from './data';
+import {
+  ALLOWED_ORIGINS, N_URLS, VALID_URL, EXTRACT_INIT, EXTRACT_ERROR, EXTRACT_INVALID_URL,
+  EXTRACT_EXCEEDING_N_URLS, DERIVED_VALUE,
+} from './const';
+import {
+  runAsyncWrapper, getReferrer, randomString, ensureContainUrlProtocol,
+  removeTailingSlash, removeUrlProtocolAndSlashes, isObject, validateUrl, cleanUrl,
+  getExtractedResult, deriveExtractedTitle,
+} from './utils';
+import { manualResults } from './results';
 
 const app = express();
 app.use(express.json());
 
-const extractCorsOptions = {
+const cCorsOptions = {
   'origin': ALLOWED_ORIGINS,
-}
+};
 
-const getOrInitExtractedResult = async (url, logKey, seq) => {
+const getOrInitExtractedResult = async (logKey, seq, url) => {
 
-  const extractedResult = {
+  const result = {
     url: url,
     extractedDT: Date.now(),
   };
@@ -35,15 +31,15 @@ const getOrInitExtractedResult = async (url, logKey, seq) => {
   console.log(`(${logKey}-${seq}) validatedUrlResult: ${validatedUrlResult}`);
   if (validatedUrlResult !== VALID_URL) {
     console.log(`(${logKey}-${seq}) Invalid url, return ${EXTRACT_INVALID_URL}`);
-    extractedResult.status = EXTRACT_INVALID_URL;
-    return extractedResult;
+    result.status = EXTRACT_INVALID_URL;
+    return result;
   }
 
   url = cleanUrl(url);
   const urlKey = removeUrlProtocolAndSlashes(url);
   url = ensureContainUrlProtocol(url);
 
-  extractedResult.url = url;
+  result.url = url;
 
   const manualResult = getExtractedResult(manualResults, urlKey);
   if (manualResult) {
@@ -57,7 +53,7 @@ const getOrInitExtractedResult = async (url, logKey, seq) => {
     return manualResult;
   }
 
-  const savedResult = (await datastore.get(datastore.key([DATASTORE_KIND, urlKey])))[0];
+  const savedResult = await dataApi.getExtract(urlKey);
   if (savedResult) {
     console.log(`(${logKey}-${seq}) Found savedResult in datastore`);
 
@@ -69,49 +65,53 @@ const getOrInitExtractedResult = async (url, logKey, seq) => {
   }
 
   console.log(`(${logKey}-${seq}) Not found savedResult in datastore`);
-  extractedResult.status = EXTRACT_INIT;
+  result.status = EXTRACT_INIT;
 
   try {
-    await datastore.save({
-      key: datastore.key([DATASTORE_KIND, urlKey]),
-      data: extractedResult,
-    });
+    await dataApi.addExtract(urlKey, result);
     console.log(`(${logKey}-${seq}) Initialised extracted result to datastore`);
   } catch (e) {
     console.log(`(${logKey}-${seq}) datastore.save throws ${e.name}: ${e.message}`);
-    extractedResult.status = EXTRACT_ERROR;
+    result.status = EXTRACT_ERROR;
   }
 
-  return extractedResult;
+  return result;
 };
 
 app.get('/', (_req, res) => {
-  res.status(200).send('Welcome to <a href="https://brace.to">Brace.to</a>\'s server!').end();
+  res.send('Welcome to <a href="https://brace.to">Brace.to</a>\'s server!');
 });
 
-app.options('/extract', cors(extractCorsOptions));
-app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => {
+app.options('/extract', cors(cCorsOptions));
+app.post('/extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) => {
   const logKey = randomString(12);
   console.log(`(${logKey}) /extract receives a post request`);
 
-  const referrer = req.get('Referrer');
+  const referrer = getReferrer(req);
   console.log(`(${logKey}) Referrer: ${referrer}`);
   if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
-    console.log(`(${logKey}) Invalid referrer, throw error`);
-    throw new Error('Invalid referrer');
+    console.log(`(${logKey}) Invalid referrer, return ERROR`);
+    res.status(500).send('ERROR');
+    return;
   }
 
   const reqBody = req.body;
   console.log(`(${logKey}) Request body: ${JSON.stringify(reqBody)}`);
-  if (typeof reqBody !== 'object' || !Array.isArray(reqBody.urls)) {
-    console.log(`(${logKey}) Invalid req.body, throw error`);
-    throw new Error('Invalid request body');
+  if (!isObject(reqBody)) {
+    console.log(`(${logKey}) Invalid reqBody, return ERROR`);
+    res.status(500).send('ERROR');
+    return;
   }
 
   const { urls } = reqBody;
+  if (!Array.isArray(reqBody.urls)) {
+    console.log(`(${logKey}) Invalid urls, return ERROR`);
+    res.status(500).send('ERROR');
+    return;
+  }
 
   const extractedResults = await Promise.all(
-    urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(url, logKey, seq))
+    urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(logKey, seq, url))
   );
 
   const results = { extractedResults: [] };
@@ -126,29 +126,36 @@ app.post('/extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) 
   res.send(JSON.stringify(results));
 }));
 
-app.options('/pre-extract', cors(extractCorsOptions));
-app.post('/pre-extract', cors(extractCorsOptions), runAsyncWrapper(async (req, res) => {
+app.options('/pre-extract', cors(cCorsOptions));
+app.post('/pre-extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) => {
   const logKey = randomString(12);
   console.log(`(${logKey}) /pre-extract receives a post request`);
 
-  const referrer = req.get('Referrer');
+  const referrer = getReferrer(req);
   console.log(`(${logKey}) Referrer: ${referrer}`);
   if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
-    console.log(`(${logKey}) Invalid referrer, throw error`);
-    throw new Error('Invalid referrer');
+    console.log(`(${logKey}) Invalid referrer, return ERROR`);
+    res.status(500).send('ERROR');
+    return;
   }
 
   const reqBody = req.body;
   console.log(`(${logKey}) Request body: ${JSON.stringify(reqBody)}`);
-  if (typeof reqBody !== 'object' || !Array.isArray(reqBody.urls)) {
-    console.log(`(${logKey}) Invalid req.body, throw error`);
-    throw new Error('Invalid request body');
+  if (!isObject(reqBody)) {
+    console.log(`(${logKey}) Invalid reqBody, return ERROR`);
+    res.status(500).send('ERROR');
+    return;
   }
 
   const { urls } = reqBody;
+  if (!Array.isArray(urls)) {
+    console.log(`(${logKey}) Invalid urls, return ERROR`);
+    res.status(500).send('ERROR');
+    return;
+  }
 
   await Promise.all(
-    urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(url, logKey, seq))
+    urls.slice(0, N_URLS).map((url, seq) => getOrInitExtractedResult(logKey, seq, url))
   );
 
   const results = { status: 'pre-extracted' };

@@ -1,11 +1,11 @@
-const { EXTRACT_OK } = require('./const');
+import { EXTRACT_OK } from './const';
 
 /*
  * In brace-server, a manualResult needs to be completed
  *   except its title which can be derived from url path
  *   because here just gets and returns.
  */
-const manualResults = {
+export const manualResults = {
   'www.wsj.com': {
     url: 'https://www.wsj.com',
     extractedDT: 1632721185359,
@@ -23,5 +23,3 @@ const manualResults = {
     favicon: 'https://www.newstatesman.com/favicon.ico',
   },
 };
-
-module.exports = { manualResults };
