@@ -15,7 +15,7 @@ export const ALLOWED_ORIGINS = [
 
 export const EXTRACT_LOG = 'ExtractLog';
 export const EXTRACT = 'Extract';
-export const BRACE_STATIC_FILES = 'brace-static-files';
+export const BRACE_STATIC_FILES = 'brace-001.appspot.com';
 
 export const N_URLS = 10;
 export const N_EXTRACTS = 2;
