@@ -18,7 +18,7 @@ export const EXTRACT = 'Extract';
 export const BRACE_STATIC_FILES = 'brace-001.appspot.com';
 
 export const N_URLS = 10;
-export const N_EXTRACTS = 2;
+export const N_EXTRACTS = 3;
 
 export const HTTP = 'http://';
 
