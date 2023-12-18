@@ -3,18 +3,19 @@
   "version": "0.5.0",
   "private": true,
   "engines": {
-    "node": "16.x.x"
+    "node": "20.x.x"
   },
   "type": "module",
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node src/index.js",
-    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/adc.json nodemon --experimental-specifier-resolution=node src/index.js",
+    "start": "node --import=specifier-resolution-node/register src/index.js",
+    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/adc.json nodemon --import=specifier-resolution-node/register src/index.js",
     "deploy": "gcloud app deploy --no-promote --project=brace-001"
   },
   "dependencies": {
-    "@google-cloud/datastore": "^7.5.1",
+    "@google-cloud/datastore": "^8.3.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "specifier-resolution-node": "^1.1.1",
     "url-parse": "^1.5.10"
   },
   "devDependencies": {}

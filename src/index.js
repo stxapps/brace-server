@@ -16,9 +16,7 @@ import { manualResults } from './results';
 const app = express();
 app.use(express.json());
 
-const cCorsOptions = {
-  'origin': ALLOWED_ORIGINS,
-};
+const cCorsOptions = {};
 
 const getOrInitExtractedResult = async (logKey, seq, url) => {
 
@@ -90,9 +88,7 @@ app.post('/extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) => {
   const referrer = getReferrer(req);
   console.log(`(${logKey}) Referrer: ${referrer}`);
   if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
-    console.log(`(${logKey}) Invalid referrer, return ERROR`);
-    res.status(500).send('ERROR');
-    return;
+    console.log(`(${logKey}) Not expected referrer.`);
   }
 
   const reqBody = req.body;
@@ -134,9 +130,7 @@ app.post('/pre-extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) =>
   const referrer = getReferrer(req);
   console.log(`(${logKey}) Referrer: ${referrer}`);
   if (!referrer || !ALLOWED_ORIGINS.includes(removeTailingSlash(referrer))) {
-    console.log(`(${logKey}) Invalid referrer, return ERROR`);
-    res.status(500).send('ERROR');
-    return;
+    console.log(`(${logKey}) Not expected referrer.`);
   }
 
   const reqBody = req.body;
