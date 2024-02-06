@@ -13,10 +13,15 @@ import {
 } from './utils';
 import { manualResults } from './results';
 
-const app = express();
-app.use(express.json());
+const corsConfig = cors({
+  origin: '*',
+  // Set the Access-Control-Max-Age header to 365 days.
+  maxAge: 60 * 60 * 24 * 365,
+});
 
-const cCorsOptions = {};
+const app = express();
+app.use(corsConfig);
+app.use(express.json());
 
 const getOrInitExtractedResult = async (logKey, seq, url) => {
 
@@ -80,8 +85,7 @@ app.get('/', (_req, res) => {
   res.send('Welcome to <a href="https://brace.to">Brace.to</a>\'s server!');
 });
 
-app.options('/extract', cors(cCorsOptions));
-app.post('/extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) => {
+app.post('/extract', runAsyncWrapper(async (req, res) => {
   const logKey = randomString(12);
   console.log(`(${logKey}) /extract receives a post request`);
 
@@ -122,8 +126,7 @@ app.post('/extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) => {
   res.send(JSON.stringify(results));
 }));
 
-app.options('/pre-extract', cors(cCorsOptions));
-app.post('/pre-extract', cors(cCorsOptions), runAsyncWrapper(async (req, res) => {
+app.post('/pre-extract', runAsyncWrapper(async (req, res) => {
   const logKey = randomString(12);
   console.log(`(${logKey}) /pre-extract receives a post request`);
 
