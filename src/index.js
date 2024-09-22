@@ -3,7 +3,7 @@ import cors from 'cors';
 
 import dataApi from './data';
 import {
-  ALLOWED_ORIGINS, N_URLS, VALID_URL, EXTRACT_INIT, EXTRACT_ERROR, EXTRACT_INVALID_URL,
+  ALLOWED_ORIGINS, N_URLS, VALID_URL, EXTRACT_INIT, EXTRACT_INVALID_URL,
   EXTRACT_EXCEEDING_N_URLS, DERIVED_VALUE,
 } from './const';
 import {
@@ -75,7 +75,8 @@ const getOrInitExtractedResult = async (logKey, seq, url) => {
     console.log(`(${logKey}-${seq}) Initialised extracted result to datastore`);
   } catch (e) {
     console.log(`(${logKey}-${seq}) datastore.save throws ${e.name}: ${e.message}`);
-    result.status = EXTRACT_ERROR;
+    // Return INIT so will try again later.
+    //result.status = EXTRACT_ERROR;
   }
 
   return result;
