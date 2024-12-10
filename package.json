@@ -14,7 +14,7 @@
   "dependencies": {
     "@google-cloud/datastore": "^9.1.0",
     "cors": "^2.8.5",
-    "express": "^4.20.0",
+    "express": "4.21.2",
     "specifier-resolution-node": "^1.1.4",
     "url-parse": "^1.5.10"
   },
