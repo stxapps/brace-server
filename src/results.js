@@ -1,4 +1,4 @@
-import { EXTRACT_OK } from './const';
+import { EXTRACT_OK, DERIVED_VALUE } from './const';
 
 /*
  * In brace-server, a manualResult needs to be completed
@@ -21,5 +21,15 @@ export const manualResults = {
     title: 'The New Statesman - Global Current Affairs, Politics & Culture',
     image: 'https://storage.googleapis.com/brace-static-files/T9FBbGYYm79APz4ta47GdUAuia5qyFByROWCYU5ZhgVQSYPp.png',
     favicon: 'https://www.newstatesman.com/favicon.ico',
+  },
+  'www.linkedin.com*': {
+    url: DERIVED_VALUE,
+    extractedDT: 1733800822882,
+    status: EXTRACT_OK,
+  },
+  'linkedin.com*': {
+    url: DERIVED_VALUE,
+    extractedDT: 1733800822882,
+    status: EXTRACT_OK,
   },
 };
