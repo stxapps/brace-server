@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "start": "node --import=specifier-resolution-node/register src/index.js",
-    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/adc.json nodemon --import=specifier-resolution-node/register src/index.js",
+    "start-local": "GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/legacy_credentials/brace@brace.to/adc.json node --import=specifier-resolution-node/register src/index.js",
     "deploy": "gcloud app deploy --no-promote --project=brace-001"
   },
   "dependencies": {

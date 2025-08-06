@@ -3,13 +3,13 @@ import cors from 'cors';
 
 import dataApi from './data';
 import {
-  ALLOWED_ORIGINS, N_URLS, VALID_URL, EXTRACT_INIT, EXTRACT_INVALID_URL,
+  ALLOWED_ORIGINS, N_URLS, VALID_URL, EXTRACT_INIT, EXTRACT_OK, EXTRACT_INVALID_URL,
   EXTRACT_EXCEEDING_N_URLS, DERIVED_VALUE,
 } from './const';
 import {
   runAsyncWrapper, getReferrer, randomString, ensureContainUrlProtocol,
   removeTailingSlash, removeUrlProtocolAndSlashes, isObject, validateUrl, cleanUrl,
-  getExtractedResult, deriveExtractedTitle,
+  isIgnoredTld, getExtractedResult, deriveExtractedTitle,
 } from './utils';
 import { manualResults } from './results';
 
@@ -44,6 +44,12 @@ const getOrInitExtractedResult = async (logKey, seq, url) => {
 
   result.url = url;
 
+  const isIgnore = isIgnoredTld(urlKey);
+  if (isIgnore) {
+    console.log(`(${logKey}-${seq}) The TLD is ignored`);
+    result.status = EXTRACT_OK;
+    return result;
+  }
   const manualResult = getExtractedResult(manualResults, urlKey);
   if (manualResult) {
     console.log(`(${logKey}-${seq}) Found in manualResults`);

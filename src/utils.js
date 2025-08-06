@@ -157,6 +157,17 @@ export const cleanText = (text) => {
   return text.replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim();
 };
 
+export const isIgnoredTld = (urlKey) => {
+  const ignoredTlds = ['.onion'];
+
+  const { host } = extractUrl(urlKey);
+  for (const tld of ignoredTlds) {
+    const matched = host.toLowerCase().endsWith(tld);
+    if (matched) return true;
+  }
+  return false;
+};
+
 export const getExtractedResult = (results, urlKey) => {
   // BUG Alert
   //   Query might be important i.e. www.youtube.com/watch?v=C5zXQU5yir4
