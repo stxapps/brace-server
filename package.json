@@ -3,7 +3,7 @@
   "version": "0.11.0",
   "private": true,
   "engines": {
-    "node": "20.x.x"
+    "node": "24.x.x"
   },
   "type": "module",
   "scripts": {
@@ -12,11 +12,10 @@
     "deploy": "gcloud app deploy --no-promote --project=brace-001"
   },
   "dependencies": {
-    "@google-cloud/datastore": "^9.1.0",
-    "cors": "^2.8.5",
-    "express": "4.21.2",
+    "@google-cloud/datastore": "^10.1.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
     "specifier-resolution-node": "^1.1.4",
     "url-parse": "^1.5.10"
-  },
-  "devDependencies": {}
+  }
 }
